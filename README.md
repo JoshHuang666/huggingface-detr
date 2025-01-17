@@ -16,7 +16,7 @@ cd huggingface-detr
 
 ## DGX Server Environment
 
-Download Boat Dataset ![Link](http://gofile.me/773h8/UwcuiA7MG) and put them under huggingface-detr directory.
+Download Boat Dataset [Link](http://gofile.me/773h8/UwcuiA7MG) and put them under huggingface-detr directory.
 
 Docker Build
 
