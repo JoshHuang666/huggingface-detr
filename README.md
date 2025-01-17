@@ -14,7 +14,7 @@ git clone git@github.com:ARG-NCTU/huggingface-detr.git
 cd huggingface-detr
 ```
 
-## Set up Environment
+## DGX Server Environment
 
 Docker Build
 
@@ -28,13 +28,13 @@ Convert to SQSH file
 source docker2sqsh.sh 
 ```
 
-## Enter Environment
-
 Run on DGX Server (Replace your SQSH file path)
 
 ```bash
 srun -N 1 -p eys3d --mpi=pmix --gres=gpu:8 --ntasks-per-node 8 --container-image dgx_gpu.sqsh --container-writable --pty /bin/bash
 ```
+
+## PC Environment
 
 Run on PC
 
