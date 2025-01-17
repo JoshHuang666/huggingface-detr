@@ -87,7 +87,13 @@ image.save("visualize_anno.jpg")
 
 ############# Preprocessing #############
 
-checkpoint = "ARG-NCTU/detr-resnet-50-finetuned-20-epochs-boat-dataset"
+checkpoint_resume = "ARG-NCTU/detr-resnet-50-finetuned-20-epochs-boat-dataset"
+checkpoint = "facebook/detr-resnet-50"
+if os.path.exists(checkpoint_resume):
+    checkpoint = checkpoint_resume
+else:
+    print(f"Checkpoint {checkpoint_resume} not found, using default {checkpoint}.")
+    
 image_processor = AutoImageProcessor.from_pretrained(checkpoint)
 
 transform = albumentations.Compose(

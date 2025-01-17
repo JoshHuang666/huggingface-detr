@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
+FROM huggingface/transformers-pytorch-gpu
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV LANG C.UTF-8
@@ -24,8 +24,6 @@ RUN echo "${USER}:111111" | chpasswd
 
 ###################################### basic tools #####################################
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC
-
 RUN apt-get -o Acquire::ForceIPv4=true update && apt-get -yq dist-upgrade \
     && apt-get -o Acquire::ForceIPv4=true install -yq --no-install-recommends \ 
     locales \
@@ -40,49 +38,29 @@ RUN apt-get -o Acquire::ForceIPv4=true update && apt-get -yq dist-upgrade \
     lsb-release \
     build-essential \
     net-tools \
-    dirmngr \
-    gnupg2 \
-    mercurial \
-    libcanberra-gtk-module \
-    libcanberra-gtk3-module \
-    libpcap-dev \
-    python3-pip \
-    python3-setuptools \
-    python3-opencv \
-    python3-numpy \
-    python3-empy  \
-    python3-dev \ 
-    python3-tk \ 
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 ##################################### PIP ######################################
 
-RUN pip3 install --upgrade pip setuptools
-
 RUN pip3 install \
     matplotlib \
     pandas \
-    torch \
-    torchaudio \
-    torchvision \
     quart \
     pytest-skip-slow \
     rich \
     opencv-python
     
 ##################################### HuggingFace #####################################
-RUN pip3 install transformers \
+
+RUN pip3 install \
     datasets \
     evaluate \
     transformers[sentencepiece] \
     accelerate \
     timm \
-    albumentations
-
-##################################### pycocotools #####################################
-
-RUN pip3 install pycocotools
+    albumentations \
+    pycocotools
 
 ##################################### Copy HuggingFace-DETR Files #####################################
 
@@ -97,6 +75,6 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 
 USER ${USER}
-WORKDIR ${HOME}
+WORKDIR ${HOME}/huggingface-detr
 
 CMD ["/bin/bash"]

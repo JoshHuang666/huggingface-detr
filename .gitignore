@@ -1,4 +1,5 @@
-data
-extracted_image
-dgx-docker.tar
-dgx-docker.sqsh
+data/
+images/
+extracted_image/
+dgx_gpu_flat.tar
+dgx_gpu.sqsh

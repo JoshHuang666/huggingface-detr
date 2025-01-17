@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-docker run \
+docker run --gpus all \
     -it \
     --rm \
     -w "/home/arg" \
     --user "root:root" \
-    argnctu/dgx:gpu \
+    argnctu/huggingface-detr:dgx \
