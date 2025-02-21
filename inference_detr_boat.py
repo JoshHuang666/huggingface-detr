@@ -28,179 +28,191 @@ import matplotlib.pyplot as plt
 from transformers import pipeline, AutoImageProcessor, AutoModelForObjectDetection
 from torchvision.ops import box_iou
 
-############# Data Loading #############
-
-# Specify the correct schema for your dataset
-features = Features({
-    'image_id': Value('int32'),
-    'image_path': Value('string'),
-    'width': Value('int32'),
-    'height': Value('int32'),
-    'objects': {
-        'id': Sequence(Value('int32')),
-        'area': Sequence(Value('float32')), 
-        'bbox': Sequence(Sequence(Value('float32'), length=4)), 
-        'category': Sequence(Value('int32'))
-    }
-})
+import argparse
 
 
-dataset = load_dataset(
-    'json', 
-    data_files={'train': 'data/instances_train2024_rvrr.jsonl', 
-                'validation': 'data/instances_val2024_rvrr.jsonl'},
-    features=features
-)
+def parse_args():
+    parser = argparse.ArgumentParser(description='Train DETR model with custom dataset.')
+    parser.add_argument('--hub_id', type=str, default='ARG-NCTU', help='Hugging Face Hub ID')
+    parser.add_argument('--repo_id', type=str, default='detr-resnet-50-finetuned-20-epochs-boat-dataset', help='Repository ID')
+    return parser.parse_args()
 
-print('\n\n')
-print(dataset["train"][0])
-print('\n\n')
+def main():
+    args = parse_args()
 
-def load_classes():
-    class_list = []
-    with open("data/classes.txt", "r") as f:
-        class_list = [cname.strip() for cname in f.readlines()]
-    return class_list
+    ############# Data Loading #############
 
-class_list = load_classes()
-
-
-
-image = Image.open(dataset["train"][0]["image_path"])
-annotations = dataset["train"][0]["objects"]
-draw = ImageDraw.Draw(image)
-
-# categories = dataset["train"].features["objects"].feature["category"].names
-
-id2label = {index: x for index, x in enumerate(class_list, start=0)}
-label2id = {v: k for k, v in id2label.items()}
-
-for i in range(len(annotations["id"])):
-    box = annotations["bbox"][i - 1]
-    class_idx = annotations["category"][i - 1]
-    x, y, w, h = tuple(box)
-    draw.rectangle((x, y, x + w, y + h), outline="red", width=1)
-    draw.text((x, y), id2label[class_idx], fill="white")
-
-# save the image
-image.save("visualize_anno.jpg")
-
-############# Preprocessing #############
-
-checkpoint = "ARG-NCTU/detr-resnet-50-finetuned-20-epochs-boat-dataset"
-image_processor = AutoImageProcessor.from_pretrained(checkpoint)
-
-transform = albumentations.Compose(
-    [
-        albumentations.Resize(480, 480),
-        # albumentations.HorizontalFlip(p=1.0),
-        albumentations.HorizontalFlip(p=0.5),
-        # albumentations.RandomBrightnessContrast(p=1.0),
-        albumentations.RandomBrightnessContrast(p=0.5),
-    ],
-    bbox_params=albumentations.BboxParams(format="coco", label_fields=["category"]),
-)
-
-def formatted_anns(image_id, category, area, bbox):
-    annotations = []
-    for i in range(0, len(category)):
-        new_ann = {
-            "image_id": image_id,
-            "category_id": category[i],
-            "isCrowd": 0,
-            "area": area[i],
-            "bbox": list(bbox[i]),
+    # Specify the correct schema for your dataset
+    features = Features({
+        'image_id': Value('int32'),
+        'image_path': Value('string'),
+        'width': Value('int32'),
+        'height': Value('int32'),
+        'objects': {
+            'id': Sequence(Value('int32')),
+            'area': Sequence(Value('float32')), 
+            'bbox': Sequence(Sequence(Value('float32'), length=4)), 
+            'category': Sequence(Value('int32'))
         }
-        annotations.append(new_ann)
-
-    return annotations
-
-# Create an empty placeholder image
-def create_empty_image(width=640, height=480, color=(0, 0, 0)):
-    return np.zeros((height, width, 3), dtype=np.uint8)  # Black image by default
+    })
 
 
-# transforming a batch
-def transform_aug_ann(examples):
-    image_ids = examples["image_id"]
-    images, bboxes, area, categories = [], [], [], []
-    for image_path, objects in zip(examples["image_path"], examples["objects"]):
-        try:
-            if not os.path.exists(image_path):
-                raise FileNotFoundError(f'{image_path} does not exist, using a placeholder image.')
-
-            # Try opening the image
-            image = Image.open(image_path)
-            image = np.array(image.convert("RGB"))[:, :, ::-1]
-        
-        except (FileNotFoundError, UnidentifiedImageError) as e:
-            print(e)
-            # Use a black placeholder image if the actual image is missing or cannot be opened
-            image = create_empty_image()
-        
-        out = transform(image=image, bboxes=objects["bbox"], category=objects["category"])
-
-        area.append(objects["area"])
-        images.append(out["image"])
-        bboxes.append(out["bboxes"])
-        categories.append(out["category"])
-
-    targets = [
-        {"image_id": id_, "annotations": formatted_anns(id_, cat_, ar_, box_)}
-        for id_, cat_, ar_, box_ in zip(image_ids, categories, area, bboxes)
-    ]
-
-    return image_processor(images=images, annotations=targets, return_tensors="pt")
-
-dataset["train"] = dataset["train"].with_transform(transform_aug_ann)
-print('\n\n')
-print(dataset["train"][15])
-print('\n\n')
-
-def collate_fn(batch):
-    pixel_values = [item["pixel_values"] for item in batch]
-    # encoding = image_processor.pad_and_create_pixel_mask(pixel_values, return_tensors="pt")
-    encoding = image_processor.pad(pixel_values, return_tensors="pt")
-    labels = [item["labels"] for item in batch]
-    batch = {}
-    batch["pixel_values"] = encoding["pixel_values"]
-    batch["pixel_mask"] = encoding["pixel_mask"]
-    batch["labels"] = labels
-    return batch
-
-############# Inference #############
-
-# url = "https://i.imgur.com/2lnWoly.jpg"
-# image = Image.open(requests.get(url, stream=True).raw)
-
-image = Image.open(dataset["validation"][0]["image_path"])
-
-image_processor = AutoImageProcessor.from_pretrained("ARG-NCTU/detr-resnet-50-finetuned-20-epochs-boat-dataset")
-model = AutoModelForObjectDetection.from_pretrained("ARG-NCTU/detr-resnet-50-finetuned-20-epochs-boat-dataset")
-
-with torch.no_grad():
-    inputs = image_processor(images=image, return_tensors="pt")
-    outputs = model(**inputs)
-    target_sizes = torch.tensor([image.size[::-1]])
-    results = image_processor.post_process_object_detection(outputs, threshold=0.5, target_sizes=target_sizes)[0]
-
-for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
-    box = [round(i, 2) for i in box.tolist()]
-    print(
-        f"Detected {model.config.id2label[label.item()]} with confidence "
-        f"{round(score.item(), 3)} at location {box}"
+    dataset = load_dataset(
+        'json', 
+        data_files={'train': 'data/instances_train2024_rvrr.jsonl', 
+                    'validation': 'data/instances_val2024_rvrr.jsonl'},
+        features=features
     )
 
-draw = ImageDraw.Draw(image)
+    print('\n\n')
+    print(dataset["train"][0])
+    print('\n\n')
 
-for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
-    box = [round(i, 2) for i in box.tolist()]
-    x, y, x2, y2 = tuple(box)
-    draw.rectangle((x, y, x2, y2), outline="red", width=1)
-    draw.text((x, y), model.config.id2label[label.item()], fill="white")
+    def load_classes():
+        class_list = []
+        with open("data/classes.txt", "r") as f:
+            class_list = [cname.strip() for cname in f.readlines()]
+        return class_list
 
-# save the image
-path = dataset["validation"][0]["image_path"]
-image.save(f"{path}_out.jpg")
+    class_list = load_classes()
 
 
+
+    image = Image.open(dataset["train"][0]["image_path"])
+    annotations = dataset["train"][0]["objects"]
+    draw = ImageDraw.Draw(image)
+
+    # categories = dataset["train"].features["objects"].feature["category"].names
+
+    id2label = {index: x for index, x in enumerate(class_list, start=0)}
+    label2id = {v: k for k, v in id2label.items()}
+
+    for i in range(len(annotations["id"])):
+        box = annotations["bbox"][i - 1]
+        class_idx = annotations["category"][i - 1]
+        x, y, w, h = tuple(box)
+        draw.rectangle((x, y, x + w, y + h), outline="red", width=1)
+        draw.text((x, y), id2label[class_idx], fill="white")
+
+    # save the image
+    image.save("visualize_anno.jpg")
+
+    ############# Preprocessing #############
+
+    checkpoint = f"{args.hub_id}/{args.repo_id}"
+    image_processor = AutoImageProcessor.from_pretrained(checkpoint)
+
+    transform = albumentations.Compose(
+        [
+            albumentations.Resize(480, 480),
+            # albumentations.HorizontalFlip(p=1.0),
+            albumentations.HorizontalFlip(p=0.5),
+            # albumentations.RandomBrightnessContrast(p=1.0),
+            albumentations.RandomBrightnessContrast(p=0.5),
+        ],
+        bbox_params=albumentations.BboxParams(format="coco", label_fields=["category"]),
+    )
+
+    def formatted_anns(image_id, category, area, bbox):
+        annotations = []
+        for i in range(0, len(category)):
+            new_ann = {
+                "image_id": image_id,
+                "category_id": category[i],
+                "isCrowd": 0,
+                "area": area[i],
+                "bbox": list(bbox[i]),
+            }
+            annotations.append(new_ann)
+
+        return annotations
+
+    # Create an empty placeholder image
+    def create_empty_image(width=640, height=480, color=(0, 0, 0)):
+        return np.zeros((height, width, 3), dtype=np.uint8)  # Black image by default
+
+
+    # transforming a batch
+    def transform_aug_ann(examples):
+        image_ids = examples["image_id"]
+        images, bboxes, area, categories = [], [], [], []
+        for image_path, objects in zip(examples["image_path"], examples["objects"]):
+            try:
+                if not os.path.exists(image_path):
+                    raise FileNotFoundError(f'{image_path} does not exist, using a placeholder image.')
+
+                # Try opening the image
+                image = Image.open(image_path)
+                image = np.array(image.convert("RGB"))[:, :, ::-1]
+            
+            except (FileNotFoundError, UnidentifiedImageError) as e:
+                print(e)
+                # Use a black placeholder image if the actual image is missing or cannot be opened
+                image = create_empty_image()
+            
+            out = transform(image=image, bboxes=objects["bbox"], category=objects["category"])
+
+            area.append(objects["area"])
+            images.append(out["image"])
+            bboxes.append(out["bboxes"])
+            categories.append(out["category"])
+
+        targets = [
+            {"image_id": id_, "annotations": formatted_anns(id_, cat_, ar_, box_)}
+            for id_, cat_, ar_, box_ in zip(image_ids, categories, area, bboxes)
+        ]
+
+        return image_processor(images=images, annotations=targets, return_tensors="pt")
+
+    dataset["train"] = dataset["train"].with_transform(transform_aug_ann)
+    print('\n\n')
+    print(dataset["train"][15])
+    print('\n\n')
+
+    def collate_fn(batch):
+        pixel_values = [item["pixel_values"] for item in batch]
+        # encoding = image_processor.pad_and_create_pixel_mask(pixel_values, return_tensors="pt")
+        encoding = image_processor.pad(pixel_values, return_tensors="pt")
+        labels = [item["labels"] for item in batch]
+        batch = {}
+        batch["pixel_values"] = encoding["pixel_values"]
+        batch["pixel_mask"] = encoding["pixel_mask"]
+        batch["labels"] = labels
+        return batch
+
+    ############# Inference #############
+
+    # url = "https://i.imgur.com/2lnWoly.jpg"
+    # image = Image.open(requests.get(url, stream=True).raw)
+
+    image = Image.open(dataset["validation"][0]["image_path"])
+
+    image_processor = AutoImageProcessor.from_pretrained(f"{args.hub_id}/{args.repo_id}")
+    model = AutoModelForObjectDetection.from_pretrained(f"{args.hub_id}/{args.repo_id}")
+
+    with torch.no_grad():
+        inputs = image_processor(images=image, return_tensors="pt")
+        outputs = model(**inputs)
+        target_sizes = torch.tensor([image.size[::-1]])
+        results = image_processor.post_process_object_detection(outputs, threshold=0.5, target_sizes=target_sizes)[0]
+
+    for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
+        box = [round(i, 2) for i in box.tolist()]
+        print(
+            f"Detected {model.config.id2label[label.item()]} with confidence "
+            f"{round(score.item(), 3)} at location {box}"
+        )
+
+    draw = ImageDraw.Draw(image)
+
+    for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
+        box = [round(i, 2) for i in box.tolist()]
+        x, y, x2, y2 = tuple(box)
+        draw.rectangle((x, y, x2, y2), outline="red", width=1)
+        draw.text((x, y), model.config.id2label[label.item()], fill="white")
+
+    # save the image
+    image.save(f"out.jpg")
+
+if __name__ == "__main__":
+    main()
