@@ -11,37 +11,42 @@ git clone git@github.com:ARG-NCTU/huggingface-detr.git
 ## Enter the repo
 
 ```bash
-cd huggingface-detr
+cd ~/huggingface-detr/
 ```
 
-## DGX Server Environment
+## Enter Docker Environment
 
-Download Boat Dataset [Link](http://gofile.me/773h8/UwcuiA7MG) and put them under huggingface-detr directory.
-
-Docker Build
+For first terminal:
 
 ```bash
-source build.sh
+source Docker/ros1-gpu/run.sh
 ```
 
-Convert to SQSH file
+More terminal:
+
+```bash
+source Docker/ros1-gpu/join.sh
+```
+
+In addition, you can convert docker image to SQSH file (not necessary)
 
 ```bash
 source docker2sqsh.sh 
 ```
 
-Run on DGX Server (Replace your SQSH file path)
+## Prepare Dataset
+
+Download HuggingFace dataset:
 
 ```bash
-srun -N 1 -p eys3d --mpi=pmix --gres=gpu:8 --ntasks-per-node 8 --container-image dgx_gpu.sqsh --container-writable --pty /bin/bash
+huggingface-cli login
+huggingface-cli download ARG-NCTU/Boat_dataset_2024 data --repo-type dataset --local-dir ~/huggingface-detr
 ```
 
-## PC Environment
-
-Run on PC
+Unzip images:
 
 ```bash
-source docker_run.sh
+unzip ~/huggingface-detr/data/images.zip -d ~/huggingface-detr/
 ```
 
 ## Training, Evaluation, Inferencing
@@ -55,7 +60,7 @@ huggingface-cli login
 Enter the repo
 
 ```bash
-cd huggingface-detr/
+cd ~/huggingface-detr/
 ```
 
 Training
@@ -74,4 +79,44 @@ Inferencing
 
 ```bash
 python3 inference_detr_boat.py
+```
+
+## Build ROS1 Workspace
+
+Enter the repo
+
+```bash
+cd ~/huggingface-detr/
+```
+
+Setup ROS
+
+```bash
+source environment_ros1.sh 
+```
+
+Clean catkin ws
+
+```bash
+source clean_ros1_all.sh
+```
+
+Build catkin ws
+
+```bash
+source build_ros1_all.sh
+```
+
+## ROS1 Inference
+
+Setup ROS
+
+```bash
+source environment_ros1.sh 
+```
+
+Run DETR
+
+```bash
+roslaunch detr_inference detr_inference.launch 
 ```
