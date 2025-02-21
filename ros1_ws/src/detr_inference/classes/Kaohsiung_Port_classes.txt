@@ -1,0 +1,4 @@
+Civilian_ship
+Buoy
+Warship
+Coast_guard
