@@ -1,0 +1,1 @@
+docker pull argnctu/huggingface-detr:ros1-gpu

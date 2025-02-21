@@ -1,4 +1,4 @@
-docker create --name temp_container argnctu/huggingface-detr:dgx
+docker create --name temp_container argnctu/huggingface-detr:ros1-gpu
 docker export temp_container > dgx_gpu_flat.tar
 mkdir extracted_image
 tar -xvf dgx_gpu_flat.tar -C extracted_image

@@ -5,7 +5,7 @@
 
 BASH_OPTION=bash
 
-IMG=argnctu/huggingface-detr:dgx
+IMG=argnctu/huggingface-detr:ros1-gpu
 
 xhost +
 containerid=$(docker ps -aqf "ancestor=${IMG}") && echo $containerid

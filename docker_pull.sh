@@ -1,1 +1,0 @@
-docker pull argnctu/huggingface-detr:dgx
