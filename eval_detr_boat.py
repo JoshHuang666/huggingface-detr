@@ -33,8 +33,8 @@ import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train DETR model with custom dataset.')
-    parser.add_argument('--hub_id', type=str, default='ARG-NCTU', help='Hugging Face Hub ID')
-    parser.add_argument('--repo_id', type=str, default='detr-resnet-50-finetuned-20-epochs-boat-dataset', help='Repository ID')
+    parser.add_argument('--hub_id', type=str, default='facebook', help='Hugging Face Hub ID') #facebook/detr-resnet-50 #ARG-NCTU
+    parser.add_argument('--repo_id', type=str, default='detr-resnet-50', help='Repository ID') #detr-resnet-50-finetuned-20-epochs-boat-dataset
     return parser.parse_args()
 
 def main():
@@ -150,7 +150,14 @@ def main():
                 # Use a black placeholder image if the actual image is missing or cannot be opened
                 image = create_empty_image()
             
-            out = transform(image=image, bboxes=objects["bbox"], category=objects["category"])
+            # Attempt to apply transformation
+            try:
+                out = transform(image=image, bboxes=objects["bbox"], category=objects["category"])
+            except Exception as e:
+                print(f"Transform error: {e}. Using default bbox.")
+                objects["bbox"] = [[0.4, 0.4, 0.2, 0.2]]  # Default bbox
+                objects["category"] = [0]  # Default category
+                out = transform(image=image, bboxes=objects["bbox"], category=objects["category"])
 
             area.append(objects["area"])
             images.append(out["image"])
@@ -263,10 +270,12 @@ def main():
 
     def eval(eval_dataset, mode="val"):
         im_processor = AutoImageProcessor.from_pretrained(f"{args.hub_id}/{args.repo_id}")
+        # im_processor = AutoImageProcessor.from_pretrained(f"{args.repo_id}", local_files_only=True)
         path_output, path_anno = save_annotation_file_images(eval_dataset, mode)
         test_ds_coco_format = CocoDetection(path_output, im_processor, path_anno)
         
         model = AutoModelForObjectDetection.from_pretrained(f"{args.hub_id}/{args.repo_id}")
+        # model = AutoModelForObjectDetection.from_pretrained(f"{args.repo_id}", local_files_only=True)
         module = evaluate.load("ybelkada/cocoevaluate", coco=test_ds_coco_format.coco)
         val_dataloader = torch.utils.data.DataLoader(
             test_ds_coco_format, batch_size=8, shuffle=False, num_workers=4, collate_fn=collate_fn

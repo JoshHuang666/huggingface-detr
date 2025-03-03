@@ -206,7 +206,7 @@ def main():
     training_args = TrainingArguments(
         output_dir=f"{args.repo_id}",
         per_device_train_batch_size=8,
-        num_train_epochs=20,
+        num_train_epochs=args.epoch,
         fp16=False,
         save_steps=len(dataset["train"]) // 8,
         logging_steps=50,
