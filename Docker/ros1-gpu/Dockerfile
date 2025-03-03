@@ -118,6 +118,12 @@ RUN pip3 install \
     albumentations \
     pycocotools
 
+##################################### tensorboard #####################################
+
+RUN pip3 install \
+    tensorboard \
+    protobuf==3.20.3
+
 ##################################### setting ###################################################
 
 RUN chown -R ${USER}:${USER} ${HOME}/
