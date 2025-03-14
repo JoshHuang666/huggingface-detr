@@ -3,13 +3,13 @@
     <arg name="pub_detection_image" default="true"/>
     
     <arg name="hub_id" default="ARG-NCTU"/>
-    <arg name="repo_id" default="detr-resnet-50-finetuned-20-epochs-boat-dataset"/>
+    <arg name="repo_id" default="detr-resnet-50-finetuned-600-epochs-KS-Buoy-dataset"/>
 
-    <arg name="classes_path" default="$(find detr_inference)/classes/boat_classes.txt"/>
+    <arg name="classes_path" default="$(find detr_inference)/classes/KS_Buoy_classes.txt"/>
 
     <arg name="confidence_threshold" default="0.8"/>
 
-    <node name="detr_inference" pkg="detr_inference" type="detr_inference.py" output="screen">
+    <node name="detr_inference_searching" pkg="detr_inference" type="detr_inference_searching.py" output="screen">
         <param name="sub_camera_topic" value="/camera_stitched/color/image_raw/compressed"/>
         <param name="pub_camera_topic" value="/detection_result_img/camera_stitched/compressed"/>
         <param name="hub_id" value="$(arg hub_id)"/>
@@ -20,6 +20,9 @@
         <param name="pub_scores_topic" value="~detection_scores"/>
         <param name="pub_labels_topic" value="~detection_labels"/>
         <param name="pub_boxes_topic" value="~detection_boxes"/>
+        <param name="pub_highest_conf_bbox_center_cord_topic" value="~highest_conf_detection_bbox_center_cord"/>
+        <param name="pub_highest_conf_bbox_area_topic" value="~highest_conf_detection_bbox_area"/>
+        <param name="pub_detected_topic" value="~detected"/>
     </node>
 
 </launch>
