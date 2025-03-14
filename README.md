@@ -40,7 +40,9 @@ Download HuggingFace dataset:
 
 ```bash
 huggingface-cli login
-huggingface-cli download ARG-NCTU/Boat_dataset_2024 data --repo-type dataset --local-dir ~/huggingface-detr
+```
+```bash
+huggingface-cli download ARG-NCTU/Boat_dataset_2024 --repo-type dataset --local-dir ~/huggingface-detr
 ```
 
 Unzip images:
@@ -66,19 +68,25 @@ cd ~/huggingface-detr/
 Training
 
 ```bash
-python3 train_detr_boat.py
+python3 train.py
+```
+
+Upload model weights to hub
+
+```bash
+huggingface-cli upload ARG-NCTU/detr-resnet-50-finetuned-20-epochs-boat-dataset detr-resnet-50-finetuned-20-epochs-boat-dataset --repo-type=model --commit-message="Upload model weights to hub"
 ```
 
 Evaluation
 
 ```bash
-python3 eval_detr_boat.py
+python3 eval.py
 ```
 
 Inferencing
 
 ```bash
-python3 inference_detr_boat.py
+python3 inference.py
 ```
 
 ## Build ROS1 Workspace
