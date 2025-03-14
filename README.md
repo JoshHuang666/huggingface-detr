@@ -71,10 +71,10 @@ Training
 python3 train.py --save_model_hub_id ARG-NCTU --save_model_repo_id detr-resnet-50-finetuned-20-epochs-Boat-dataset --load_model_hub_id facebook --load_model_repo_id detr-resnet-50 --dataset_hub_id ARG-NCTU --dataset_repo_id Boat_dataset_2024 --dataset_format jsonl --epoch 20 --batch_size 8 --learning_rate 1e-5 --weight_decay 1e-4 --logging_steps 50 --save_total_limit 100 --classes_path data/classes.txt --image_height 480 --image_width 640 --device cuda
 ```
 
-Upload model weights to hub
+Upload model weights to hub (If push_to_hub not working)
 
 ```bash
-huggingface-cli upload ARG-NCTU/detr-resnet-50-finetuned-20-epochs-boat-dataset detr-resnet-50-finetuned-20-epochs-Boat-dataset --repo-type=model --commit-message="Upload model weights to hub"
+huggingface-cli upload ARG-NCTU/detr-resnet-50-finetuned-20-epochs-Boat-dataset detr-resnet-50-finetuned-20-epochs-Boat-dataset --repo-type=model --commit-message="Upload model weights to hub"
 ```
 
 Evaluation
