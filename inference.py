@@ -102,10 +102,12 @@ def main():
     if args.input_path.lower().endswith(('.png', '.jpg', '.jpeg')):
         if args.output_path is None:
             args.output_path = os.path.join(os.path.dirname(args.input_path), "output.png")
+        os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
         process_image(args.input_path, args.output_path, model, image_processor, args.device, args.confidence_threshold)
     elif args.input_path.lower().endswith(('.mp4', '.avi', '.mov')):
         if args.output_path is None:
             args.output_path = os.path.join(os.path.dirname(args.input_path), "output.mp4")
+        os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
         process_video(args.input_path, args.output_path, model, image_processor, args.device, args.confidence_threshold)
     else:
         print("Unsupported file format. Please provide an image or video file.")
@@ -117,3 +119,5 @@ if __name__ == '__main__':
 # python3 inference.py --hub_id ARG-NCTU --repo_id detr-resnet-50-finetuned-600-epochs-Kaohsiung-Port-dataset --input_path images/output_video_path1_1.png --output_path output.png --confidence_threshold 0.5
 
 # python3 inference.py --hub_id ARG-NCTU --repo_id detr-resnet-50-finetuned-600-epochs-KS-Buoy-dataset --input_path source_videos/2025-03-14-19-18-00_stitched.mp4 --output_path output.mp4 --confidence_threshold 0.8
+
+# python3 inference.py --hub_id ARG-NCTU --repo_id detr-resnet-50-finetuned-20-epochs-Boat-dataset-0314 --input_path source_videos/Multi_Boat.mp4 --output_path output_videos/Multi_Boat.mp4 --confidence_threshold 0.5

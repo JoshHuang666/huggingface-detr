@@ -151,3 +151,5 @@ if __name__ == '__main__':
 # python3 eval.py --hub_id ARG-NCTU --repo_id detr-resnet-50-finetuned-600-epochs-Kaohsiung-Port-dataset --dataset_hub_id ARG-NCTU --dataset_repo_id Kaohsiung_Port_dataset_2024 --dataset_format parquet --classes_path data/Kaohsiung_Port_classes.txt --image_height 480 --image_width 1920 --batch_size 8 --num_workers 4 --device cuda
 
 # python3 eval.py --hub_id ARG-NCTU --repo_id detr-resnet-50-finetuned-600-epochs-KS-Buoy-dataset --dataset_hub_id ARG-NCTU --dataset_repo_id KS_Buoy_dataset_2025 --dataset_format parquet --classes_path data/KS_Buoy_classes.txt --image_height 480 --image_width 1920 --batch_size 8 --num_workers 4 --device cuda
+
+# python3 eval.py --hub_id ARG-NCTU --repo_id detr-resnet-50-finetuned-20-epochs-Boat-dataset-0314 --dataset_hub_id ARG-NCTU --dataset_repo_id Boat_dataset_2024 --dataset_format jsonl --classes_path data/boat_classes.txt --image_height 480 --image_width 640 --batch_size 8 --num_workers 4 --device cuda
