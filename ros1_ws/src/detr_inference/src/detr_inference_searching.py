@@ -102,11 +102,11 @@ class DetrInferenceSearchingNode:
             x, y, x2, y2 = [round(i, 2) for i in box.tolist()]
             draw.rectangle((x, y, x2, y2), outline=box_color, width=2)
             bbox_area = int((x2 - x) * (y2 - y))
-            draw.text((x, y), f"class: {class_name}, conf: {score:.2f}, area: {bbox_area}", fill=box_color, font=font)
+            draw.text((x, y-60), f"class: {class_name}, conf: {score:.2f}, area: {bbox_area}", fill=box_color, font=font)
 
         return image
     
-    def draw_detection(self, image, detection):
+    def draw_detection(self, image, detection, highest_conf_bbox_center_cord, bbox_area):
         draw = ImageDraw.Draw(image)
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
@@ -118,8 +118,11 @@ class DetrInferenceSearchingNode:
         box_color = self.class_colors.get(class_name, "white")
         x, y, x2, y2 = box
         draw.rectangle((x, y, x2, y2), outline=box_color, width=2)
-        bbox_area = int((x2 - x) * (y2 - y))
-        draw.text((x, y), f"class: {class_name}, conf: {score:.2f}, area: {bbox_area}", fill=box_color, font=font)
+        # bbox_area = int((x2 - x) * (y2 - y))
+        bbox_area = round(bbox_area, 5)
+        highest_conf_bbox_center_cord = [round(cord, 3) for cord in highest_conf_bbox_center_cord]
+
+        draw.text((x, y-60), f"class: {class_name}, conf: {score:.2f}, area: {bbox_area}, \ncord: {highest_conf_bbox_center_cord}", fill=box_color, font=font)
         return image
 
     def timer_callback(self, event):
@@ -186,6 +189,7 @@ class DetrInferenceSearchingNode:
                     # rospy.loginfo("Normalized bbox: center_x: %f, center_y: %f, width: %f, height: %f", bbox_center_x, bbox_center_y, bbox_width, bbox_height)
 
                     # Publish the bbox
+                    highest_conf_bbox_center_cord = [bbox_center_x, bbox_center_y]
                     self.pub_highest_conf_bbox_center_cord.publish(Float32MultiArray(data=[bbox_center_x, bbox_center_y]))
                     self.pub_highest_conf_bbox_area.publish(Float32(data=bbox_area))
 
@@ -194,7 +198,7 @@ class DetrInferenceSearchingNode:
                     # processed_image = self.draw_detections(pil_image, detections)
                     if self.detected:
                         detection = [highest_confidence_score, highest_confidence_label, highest_confidence_bbox]
-                        processed_image = self.draw_detection(pil_image, detection)
+                        processed_image = self.draw_detection(pil_image, detection, highest_conf_bbox_center_cord, bbox_area)
                     else:
                         processed_image = pil_image
                     self.detected = False

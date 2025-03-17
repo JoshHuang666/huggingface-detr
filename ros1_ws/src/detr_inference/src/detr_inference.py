@@ -98,7 +98,7 @@ class DetrInferenceNode:
             x, y, x2, y2 = [round(i, 2) for i in box.tolist()]
             draw.rectangle((x, y, x2, y2), outline=box_color, width=2)
             bbox_area = int((x2 - x) * (y2 - y))
-            draw.text((x, y), f"class: {class_name}, conf: {score:.2f}, area: {bbox_area}", fill=box_color, font=font)
+            draw.text((x, y-60), f"class: {class_name}, conf: {score:.2f}, area: {bbox_area}", fill=box_color, font=font)
 
         return image
 
