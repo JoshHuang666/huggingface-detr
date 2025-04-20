@@ -7,7 +7,7 @@ import rospy
 rospack = rospkg.RosPack()
 
 # Define the local path for the model
-local_model_dir = os.path.join(rospack.get_path("object_detection"), "model")        
+local_model_dir = os.path.join(rospack.get_path("detr_inference"), "model")        
 
 # Load the processor and model
 hf_account_name = rospy.get_param('~hub_id', None)
