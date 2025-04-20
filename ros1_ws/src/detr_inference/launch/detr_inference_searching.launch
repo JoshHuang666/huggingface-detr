@@ -5,6 +5,11 @@
     <arg name="hub_id" default="ARG-NCTU"/>
     <arg name="repo_id" default="detr-resnet-50-finetuned-600-epochs-KS-Buoy-dataset"/>
 
+    <node name="download_model" pkg="detr_inference" type="download_model.py" output="screen">
+        <param name="hub_id" value="$(arg hub_id)"/>
+        <param name="repo_id" value="$(arg repo_id)"/>
+    </node>
+
     <arg name="classes_path" default="$(find detr_inference)/classes/KS_Buoy_classes.txt"/>
 
     <arg name="confidence_threshold" default="0.8"/>

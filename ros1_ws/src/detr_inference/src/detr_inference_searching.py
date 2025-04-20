@@ -13,6 +13,8 @@ import rospkg
 import time
 import cv2
 
+rospack = rospkg.RosPack()
+
 class DetrInferenceSearchingNode:
     def __init__(self):
         rospy.init_node('detr_inference_searching', anonymous=True)
@@ -62,8 +64,9 @@ class DetrInferenceSearchingNode:
 
     def load_model(self):
         """Load the DETR model and processor."""
-        self.image_processor = AutoImageProcessor.from_pretrained(f"{self.hub_id}/{self.repo_id}")
-        self.model = AutoModelForObjectDetection.from_pretrained(f"{self.hub_id}/{self.repo_id}")
+        hf_model_path = os.path.join(rospack.get_path("object_detection"), "model", self.hub_id, self.repo_id)
+        self.image_processor = AutoImageProcessor.from_pretrained(hf_model_path, local_files_only=True)
+        self.model = AutoModelForObjectDetection.from_pretrained(hf_model_path, local_files_only=True)
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
