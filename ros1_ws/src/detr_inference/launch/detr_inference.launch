@@ -6,9 +6,6 @@
     <arg name="repo_id" default="detr-resnet-50-finetuned-20-epochs-boat-dataset"/>
 
     <node name="download_model" pkg="detr_inference" type="download_model.py" output="screen">
-        <param name="hub_id" value="$(arg hub_id)"/>
-        <param name="repo_id" value="$(arg repo_id)"/>
-    </node>
 
     <arg name="classes_path" default="$(find detr_inference)/classes/boat_classes.txt"/>
 
