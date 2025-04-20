@@ -63,7 +63,7 @@ class DetrInferenceNode:
 
     def load_model(self):
         """Load the DETR model and processor."""
-        hf_model_path = os.path.join(rospack.get_path("detr_inference"), "model", self.hub_id, self.repo_id)
+        hf_model_path = os.path.abspath(os.path.join(rospack.get_path("detr_inference"), "model", self.hub_id, self.repo_id))
         rospy.loginfo(f"Loading model from {hf_model_path}")
         self.image_processor = AutoImageProcessor.from_pretrained(hf_model_path, local_files_only=True)
         self.model = AutoModelForObjectDetection.from_pretrained(hf_model_path, local_files_only=True)
