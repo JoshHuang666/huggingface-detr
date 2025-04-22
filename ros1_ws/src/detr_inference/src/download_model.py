@@ -11,7 +11,7 @@ local_model_dir = os.path.join(rospack.get_path("detr_inference"), "model")
 
 # Load the processor and model
 hf_account_name = "ARG-NCTU"
-hf_repo_name = "detr-resnet-50-finetuned-20-epochs-boat-dataset"
+hf_repo_name = "detr-resnet-50-finetuned-600-epochs-GuardBoat-dataset"
 hf_model_path = os.path.join(local_model_dir, hf_account_name, hf_repo_name)
 
 if not os.path.exists(hf_model_path):

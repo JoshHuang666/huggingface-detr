@@ -12,6 +12,7 @@ import os
 import rospkg
 import time
 import cv2
+import matplotlib.colors as mcolors
 
 rospack = rospkg.RosPack()
 
@@ -48,9 +49,10 @@ class DetrInferenceNode:
         self.pub_detection_image_enabled = rospy.get_param('~pub_detection_image', True)
 
         # Colors for bounding boxes
-        self.colors = ["red", "green", "blue", "yellow", "purple", "orange", "cyan", "magenta",
-                       "lime", "pink", "teal", "lavender", "brown", "beige", "maroon", "mint",
-                       "olive", "apricot", "navy", "grey", "white", "black"]
+        # self.colors = ["red", "green", "blue", "yellow", "purple", "orange", "cyan", "magenta",
+        #                "lime", "pink", "teal", "lavender", "brown", "beige", "maroon", "mint",
+        #                "olive", "apricot", "navy", "grey", "white", "black"]
+        self.colors = ["yellow",]
 
     def load_classes(self):
         """Load class names from the specified file."""
@@ -77,7 +79,7 @@ class DetrInferenceNode:
         self.pub_scores = rospy.Publisher(rospy.get_param('~pub_scores_topic', '~detection_scores'), Float32MultiArray, queue_size=1)
         self.pub_labels = rospy.Publisher(rospy.get_param('~pub_labels_topic', '~detection_labels'), Int32MultiArray, queue_size=1)
         self.pub_boxes = rospy.Publisher(rospy.get_param('~pub_boxes_topic', '~detection_boxes'), Int32MultiArray, queue_size=1)
-
+    
     def detect_objects(self, image):
         """Perform object detection on the input image."""
         inputs = self.image_processor(images=image, return_tensors="pt")
@@ -87,24 +89,26 @@ class DetrInferenceNode:
         results = self.image_processor.post_process_object_detection(outputs, threshold=self.confidence_threshold, target_sizes=target_sizes)[0]
         return results
 
-    def draw_detections(self, image, detections):
-        """Draw bounding boxes and labels on the image."""
-        draw = ImageDraw.Draw(image)
-        try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
-        except IOError:
-            font = ImageFont.load_default()
-            rospy.logwarn("Custom font not found, using default font.")
+    def name_to_bgr(self, color_name):
+        """Convert color name string (e.g., 'yellow') to OpenCV BGR tuple."""
+        rgb = mcolors.to_rgb(color_name)  # e.g., (1.0, 1.0, 0.0)
+        rgb = [int(x * 255) for x in rgb]
+        return (rgb[2], rgb[1], rgb[0])  # Convert RGB to BGR
 
+    def draw_detections(self, image, detections):
+        """Draw bounding boxes and labels directly on a cv2 (BGR) image using self.class_colors."""
         for score, label, box in zip(detections["scores"], detections["labels"], detections["boxes"]):
             class_name = self.model.config.id2label[label.item()]
-            box_color = self.class_colors.get(class_name, "white")
-            x, y, x2, y2 = [round(i, 2) for i in box.tolist()]
-            draw.rectangle((x, y, x2, y2), outline=box_color, width=2)
-            bbox_area = int((x2 - x) * (y2 - y))
-            draw.text((x, y-60), f"class: {class_name}, conf: {score:.2f}, area: {bbox_area}", fill=box_color, font=font)
-
+            color_name = self.class_colors.get(class_name, "white")
+            box_color = self.name_to_bgr(color_name)
+            x, y, x2, y2 = [int(i) for i in box.tolist()]
+            cv2.rectangle(image, (x, y), (x2, y2), box_color, 2)
+            bbox_area = (x2 - x) * (y2 - y)
+            text = f"{class_name} {score:.2f} area:{bbox_area}"
+            text_y = y - 10 if y - 10 > 10 else y + 20
+            cv2.putText(image, text, (x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, box_color, 2)
         return image
+
 
     def timer_callback(self, event):
         """ROS timer callback function to process incoming images."""
@@ -146,8 +150,8 @@ class DetrInferenceNode:
 
             if self.pub_detection_image_enabled:
                 try:
-                    processed_image = self.draw_detections(pil_image, detections)
-                    ros_image = self.bridge.cv2_to_compressed_imgmsg(np.array(processed_image), dst_format='jpeg')
+                    processed_image = self.draw_detections(cv_image, detections)
+                    ros_image = self.bridge.cv2_to_compressed_imgmsg(processed_image, dst_format='jpeg')
                     if msg_header is not None:
                         ros_image.header = msg_header
                         ros_image.header.stamp = rospy.Time.now()
