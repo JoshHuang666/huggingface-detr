@@ -36,8 +36,8 @@ class DetrInferenceNode:
         # Publishers
         self.init_publishers()
         
-        # Timer for processing frames
-        rospy.Timer(rospy.Duration(0.2), self.timer_callback)
+        # Subscriber
+        rospy.Subscriber(self.sub_camera_topic, CompressedImage, self.detection_callback)
 
     def load_parameters(self):
         """Load ROS parameters."""
@@ -110,13 +110,7 @@ class DetrInferenceNode:
         return image
 
 
-    def timer_callback(self, event):
-        """ROS timer callback function to process incoming images."""
-        try:
-            msg = rospy.wait_for_message(self.sub_camera_topic, CompressedImage, timeout=0.2)
-        except rospy.ROSException:
-            rospy.loginfo('No new image received')
-            return
+    def detection_callback(self, msg):
 
         start_time = time.time()
         msg_header = msg.header
